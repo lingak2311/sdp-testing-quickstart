@@ -4,32 +4,80 @@
 # environment_version = "5"
 # ///
 # MAGIC %md
-# MAGIC # SDP unit-testing demo: one-click setup
+# MAGIC # SDP unit-testing quickstart: one setup notebook
 # MAGIC
-# MAGIC Creates the schema and seeds the two source tables the pipeline reads:
-# MAGIC `orders_source` (bronze input) and `customers_cdf` (change events for AUTO CDC).
+# MAGIC You pulled this repo into your workspace as a Git folder. Run this notebook
+# MAGIC top to bottom and it does everything for you:
 # MAGIC
-# MAGIC You provide a catalog you can write to. The schema is fixed to
-# MAGIC `demo_sdp_unit_testing` so the pipeline and test files work unchanged.
+# MAGIC 1. works out where the repo lives (no hardcoded paths)
+# MAGIC 2. creates the schema
+# MAGIC 3. seeds the two source tables the pipeline reads
+# MAGIC 4. creates (or updates) the SDP pipeline, pointed at the repo code
 # MAGIC
-# MAGIC Run all cells, then create the pipeline pointing at `transformations.py`.
-# MAGIC The tests seed their own data, so they do not need these tables. These are
-# MAGIC for running the pipeline end to end and exploring the gold table.
+# MAGIC You provide one thing: a catalog you can write to. Everything else is derived.
+# MAGIC
+# MAGIC The pipeline is created for you here on purpose. The "Create ETL pipeline"
+# MAGIC wizard always starts a blank project and will not adopt the files you pulled
+# MAGIC from Git, so we create the pipeline through the SDK instead and point it
+# MAGIC straight at `pipeline/transformations.py`.
 
 # COMMAND ----------
 
-dbutils.widgets.text("catalog", "default", "Catalog (must be writable)")
+# MAGIC %md
+# MAGIC ## Step 1: pick your catalog
+# MAGIC
+# MAGIC Set the catalog in the widget that appears at the top of the notebook after
+# MAGIC you run this cell. It must be a catalog you can create schemas and tables in.
+# MAGIC The schema is fixed to `demo_sdp_unit_testing` so the pipeline code, which
+# MAGIC reads tables by name, works without edits.
+
+# COMMAND ----------
+
+dbutils.widgets.text("catalog", "", "Catalog (must be writable)")
 
 CATALOG = dbutils.widgets.get("catalog").strip()
 SCHEMA = "demo_sdp_unit_testing"
-FQ = f"{CATALOG}.{SCHEMA}"
 
-assert CATALOG, "Set a catalog name in the widget above."
-print(f"Target: {FQ}")
+assert CATALOG, "Set a catalog in the widget at the top, then run this cell again."
+
+FQ = f"{CATALOG}.{SCHEMA}"
+print(f"Catalog: {CATALOG}")
+print(f"Schema:  {SCHEMA}")
+print(f"Target:  {FQ}")
 
 # COMMAND ----------
 
-# MAGIC %md ## 1. Create the schema
+# MAGIC %md
+# MAGIC ## Step 2: work out where this repo lives
+# MAGIC
+# MAGIC This notebook sits at `<repo>/setup/00_setup`. We read the notebook's own
+# MAGIC workspace path at runtime and step up two folders to get the repo root, so
+# MAGIC this works in anyone's workspace with no path edits. From the root we build
+# MAGIC the path to the pipeline source file.
+
+# COMMAND ----------
+
+notebook_path = (
+    dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()
+)
+# notebook_path is like /Workspace/Users/<you>/sdp-testing-quickstart/setup/00_setup
+setup_dir = notebook_path.rsplit("/", 1)[0]      # .../sdp-testing-quickstart/setup
+repo_root = setup_dir.rsplit("/", 1)[0]          # .../sdp-testing-quickstart
+
+# The pipeline sources ONE file. Pointing at the single file, not the folder,
+# is what keeps the test file and this notebook out of the pipeline.
+pipeline_source = f"{repo_root}/pipeline/transformations.py"
+
+print(f"Notebook path:   {notebook_path}")
+print(f"Repo root:       {repo_root}")
+print(f"Pipeline source: {pipeline_source}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 3: create the schema
+# MAGIC
+# MAGIC Idempotent. Safe to run more than once.
 
 # COMMAND ----------
 
@@ -39,10 +87,12 @@ print(f"Schema ready: {FQ}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 2. Seed the bronze source: orders_source
+# MAGIC ## Step 4: seed the bronze source, orders_source
 # MAGIC
-# MAGIC A realistic spread with the edge cases the transform and expectations handle:
-# MAGIC valid rows, a zero quantity, a null price, and a null customer id.
+# MAGIC Fifteen orders with the edge cases the transform and expectations handle:
+# MAGIC valid rows, a zero quantity, a null price, and a null customer id. The unit
+# MAGIC tests do not use this table (they seed their own mock rows). This is here so
+# MAGIC you can run the pipeline for real and see the gold table.
 
 # COMMAND ----------
 
@@ -72,11 +122,12 @@ display(spark.table(f"{FQ}.orders_source"))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3. Seed the CDC source: customers_cdf
+# MAGIC ## Step 5: seed the CDC source, customers_cdf
 # MAGIC
-# MAGIC Change events for AUTO CDC. Note C1: three events arriving out of order
-# MAGIC (sequence 1, then 3, then a late 2). The pipeline must resolve the current
-# MAGIC state to sequence 3 and keep the full SCD2 history.
+# MAGIC Change events for AUTO CDC. Look at customer C1: three events arriving out of
+# MAGIC order (sequence 1, then 3, then a late 2). The pipeline must resolve the
+# MAGIC current state to sequence 3 (Gold, Manchester) and keep the full SCD Type 2
+# MAGIC history.
 
 # COMMAND ----------
 
@@ -100,83 +151,105 @@ display(spark.table(f"{FQ}.customers_cdf"))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Data is ready. Now create the pipeline end to end.
+# MAGIC ## Step 6: create or update the SDP pipeline
 # MAGIC
-# MAGIC The steps below have a few non-obvious points. Follow them in order.
+# MAGIC We build the pipeline spec in code and create it through the SDK. Key settings,
+# MAGIC each of which matters for unit testing:
+# MAGIC
+# MAGIC - `channel = "PREVIEW"`: unit testing is Beta, only on PREVIEW.
+# MAGIC - `continuous = False`: triggered mode is required.
+# MAGIC - `serverless = True`, `photon = True`: serverless compute.
+# MAGIC - `catalog` and `schema`: your catalog and the fixed demo schema, so output
+# MAGIC   tables land beside the sources you just seeded.
+# MAGIC - `libraries`: a single-file glob at `pipeline/transformations.py`. This is
+# MAGIC   deliberate. It sources ONLY the pipeline definition, so the test file, this
+# MAGIC   setup notebook, the README, and the golden prompt are all excluded from the
+# MAGIC   pipeline graph. A folder glob (`pipeline/**`) would wrongly pull the test
+# MAGIC   file in.
+# MAGIC
+# MAGIC The cell is idempotent: if a pipeline named `sdp-unit-testing` already exists
+# MAGIC it is updated in place, otherwise it is created.
+
+# COMMAND ----------
+
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.service.pipelines import PipelineLibrary, PathPattern
+
+w = WorkspaceClient()
+
+PIPELINE_NAME = "sdp-unit-testing"
+
+libraries = [PipelineLibrary(glob=PathPattern(include=pipeline_source))]
+
+# Is there already a pipeline with this name? If so, update it rather than
+# create a duplicate.
+existing_id = None
+for p in w.pipelines.list_pipelines():
+    if p.name == PIPELINE_NAME:
+        existing_id = p.pipeline_id
+        break
+
+if existing_id:
+    w.pipelines.update(
+        pipeline_id=existing_id,
+        name=PIPELINE_NAME,
+        catalog=CATALOG,
+        schema=SCHEMA,
+        channel="PREVIEW",
+        continuous=False,
+        serverless=True,
+        photon=True,
+        root_path=repo_root,
+        libraries=libraries,
+    )
+    pipeline_id = existing_id
+    print(f"Updated existing pipeline {PIPELINE_NAME}: {pipeline_id}")
+else:
+    created = w.pipelines.create(
+        name=PIPELINE_NAME,
+        catalog=CATALOG,
+        schema=SCHEMA,
+        channel="PREVIEW",
+        continuous=False,
+        serverless=True,
+        photon=True,
+        root_path=repo_root,
+        libraries=libraries,
+    )
+    pipeline_id = created.pipeline_id
+    print(f"Created pipeline {PIPELINE_NAME}: {pipeline_id}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### 4. Create the pipeline and set its defaults
-# MAGIC
-# MAGIC Create an ETL pipeline. Its **default catalog** and **default schema**
-# MAGIC decide where every output table lands, so set them explicitly:
-# MAGIC
-# MAGIC - Default catalog: the catalog you used in the widget above.
-# MAGIC - Default schema: `demo_sdp_unit_testing`.
-# MAGIC
-# MAGIC If you leave the schema as `default`, the pipeline writes its tables there
-# MAGIC instead, and the gold table will not sit beside your seeded sources.
+# MAGIC ## Step 7: open the pipeline and confirm
+
+# COMMAND ----------
+
+host = spark.conf.get("spark.databricks.workspaceUrl")
+print("Pipeline is ready. Open it here:")
+print(f"https://{host}/pipelines/{pipeline_id}")
+print()
+print("What you should see:")
+print("  - source file: pipeline/transformations.py (only that file)")
+print("  - channel PREVIEW, triggered mode, serverless")
+print(f"  - default catalog {CATALOG}, schema {SCHEMA}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### 5. Set the channel to PREVIEW and mode to triggered
+# MAGIC ## Step 8: run the tests
 # MAGIC
-# MAGIC Unit testing is Beta, so the pipeline must be on the **PREVIEW** channel in
-# MAGIC **triggered** mode. The Settings UI does not always expose the channel, so
-# MAGIC verify it in the JSON view: open Pipeline settings, switch the toggle from
-# MAGIC **UI** to **JSON**, and confirm these fields:
+# MAGIC In the pipeline you just opened:
 # MAGIC
-# MAGIC ```json
-# MAGIC {
-# MAGIC   "name": "sdp-unit-testing",
-# MAGIC   "channel": "PREVIEW",
-# MAGIC   "continuous": false,
-# MAGIC   "serverless": true,
-# MAGIC   "catalog": "<your catalog>",
-# MAGIC   "schema": "demo_sdp_unit_testing",
-# MAGIC   "root_path": "/Workspace/Users/<you>/sdp-unit-testing",
-# MAGIC   "libraries": [
-# MAGIC     { "glob": { "include": "/Workspace/Users/<you>/sdp-unit-testing/pipeline/transformations.py" } }
-# MAGIC   ]
-# MAGIC }
-# MAGIC ```
+# MAGIC 1. In the editor file tree, confirm `pipeline/transformations.py` is the
+# MAGIC    source. The test file, this notebook, and the docs are not part of the
+# MAGIC    pipeline, which is correct.
+# MAGIC 2. Open `pipeline/tests/test_transformations.py`.
+# MAGIC 3. Click **Run file** (not "Run pipeline"). The nine tests appear in the
+# MAGIC    results panel with pass or fail per assertion. Run a single test with the
+# MAGIC    play button in its gutter.
 # MAGIC
-# MAGIC `"channel": "PREVIEW"` and `"continuous": false` are the two that gate unit
-# MAGIC testing. If `channel` reads `CURRENT` or is absent, set it to `PREVIEW`.
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### 6. Link ONLY the pipeline source, not the tests
-# MAGIC
-# MAGIC In the editor file tree every file starts unlinked (a broken-chain icon).
-# MAGIC You link exactly one file as pipeline source code:
-# MAGIC
-# MAGIC - `pipeline/transformations.py`  ->  right-click, **Include as pipeline source code**.
-# MAGIC
-# MAGIC Leave everything else unlinked:
-# MAGIC
-# MAGIC - `pipeline/tests/test_transformations.py`  ->  stays unlinked. It runs in the
-# MAGIC   test harness, not the pipeline graph. Linking it makes SDP try to evaluate
-# MAGIC   the test functions as pipeline definitions, which fails.
-# MAGIC - `setup/00_setup`, `setup/golden-prompt.md`, `README.md`  ->  stay unlinked.
-# MAGIC
-# MAGIC A note on the `libraries` glob: point it at the single file
-# MAGIC `pipeline/transformations.py`, not at `pipeline/**`. A folder glob would sweep
-# MAGIC in `pipeline/tests/` and pull the test file into the pipeline, the exact thing
-# MAGIC step 6 is avoiding.
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### 7. Run the tests
-# MAGIC
-# MAGIC Open `pipeline/tests/test_transformations.py` and click **Run file** (not
-# MAGIC "Run pipeline"). The nine tests appear in the results panel with pass or fail
-# MAGIC per assertion. Run a single test with the play button in its gutter.
-# MAGIC
-# MAGIC The tests seed their own mock data, so they do not read the tables this
-# MAGIC notebook created. Those seeded tables are for running the pipeline itself
-# MAGIC (Run pipeline) and exploring the gold table and the SCD2 history.
+# MAGIC To run the pipeline itself against the seeded data, click **Run pipeline**,
+# MAGIC then explore `orders_curated` (revenue by tier) and `customers_history`
+# MAGIC (the SCD Type 2 history).

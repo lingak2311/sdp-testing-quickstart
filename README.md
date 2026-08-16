@@ -9,6 +9,9 @@ Companion to the blog. All APIs verified against public docs on 2026-08-16.
 ## Layout
 
 ```
+setup/
+  00_setup                    run this first: seeds data and creates the pipeline
+  golden-prompt.md            optional: build the pipeline with Genie Code instead
 pipeline/
   transformations.py          the pipeline: raw -> clean -> customers_history (SCD2) -> curated
   tests/
@@ -19,24 +22,34 @@ pipeline/
 
 Unit testing is Beta. Before you run:
 
-1. The pipeline is on the **PREVIEW** channel.
-2. The pipeline runs in **triggered** mode (not continuous).
-3. You have **Owner** permission on the pipeline, plus `USE CATALOG` and
-   `CREATE SCHEMA` on the default catalog.
-4. You are in the web-based **Lakeflow Editor**. Tests run there only, not
-   locally and not over Spark Connect.
+1. Owner permission to create a pipeline, plus `USE CATALOG` and `CREATE SCHEMA`
+   on a catalog you can write to.
+2. Serverless compute available in your workspace.
 
-The pipeline and tests target `lingesh_fe_sa_workspace_catalog.demo_sdp_unit_testing`.
-Create that schema once before the first run, or point the references at another
-schema you can write to inside `lingesh_fe_sa_workspace_catalog`.
+The setup notebook handles the PREVIEW channel, triggered mode, and the catalog
+and schema for you. You only supply a catalog name.
 
 ## How to run
 
-1. Create a pipeline, set its default catalog and schema.
-2. Add `transformations.py` as a transformation file.
-3. Add `tests/test_transformations.py` as a test file (the editor: Add, then Test).
-4. Run the whole test file, or a single test with the play button in the gutter.
-   Results show in the editor panel, pass or fail per assertion.
+Do NOT use the "Create ETL pipeline" wizard. It always starts a blank project and
+will not adopt the files you pulled from Git. The setup notebook creates the
+pipeline for you, pointed at this repo's code.
+
+1. Pull this repo into your workspace as a Git folder.
+2. Open `setup/00_setup` and run it top to bottom. In the `catalog` widget, enter
+   a catalog you can write to. The notebook works out the repo location, creates
+   the schema, seeds the source tables, and creates the `sdp-unit-testing`
+   pipeline pointed at `pipeline/transformations.py`.
+3. The last cell prints a link to the pipeline. Open it.
+4. Open `pipeline/tests/test_transformations.py` and click **Run file** (not "Run
+   pipeline"). The nine tests appear in the results panel, pass or fail per
+   assertion. Run a single test with the play button in its gutter.
+
+The pipeline sources only `pipeline/transformations.py`. The test file, the setup
+notebook, and these docs are not part of the pipeline, which is what you want.
+
+To run the pipeline itself against the seeded data, click **Run pipeline**, then
+explore `orders_curated` and `customers_history`.
 
 ## What each test proves
 
