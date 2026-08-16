@@ -1,0 +1,6 @@
+# Internal working notes, never published to the public quick-start repo
+FIELD-NOTES.md
+
+# Python
+__pycache__/
+*.pyc
