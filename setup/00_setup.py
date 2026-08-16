@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "5"
+# ///
 # MAGIC %md
 # MAGIC # SDP unit-testing demo: one-click setup
 # MAGIC
@@ -14,7 +18,7 @@
 
 # COMMAND ----------
 
-dbutils.widgets.text("catalog", "lingesh_fe_sa_workspace_catalog", "Catalog (must be writable)")
+dbutils.widgets.text("catalog", "default", "Catalog (must be writable)")
 
 CATALOG = dbutils.widgets.get("catalog").strip()
 SCHEMA = "demo_sdp_unit_testing"
