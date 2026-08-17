@@ -4,6 +4,10 @@ A small retail orders pipeline that shows how to test Lakeflow Spark Declarative
 Pipelines (SDP): unit tests for transform logic, an integration test for AUTO CDC
 SCD Type 2, and tests that assert expectations fire as declared.
 
+This is a fail-first lesson. The pipeline ships with a deliberate bug. You run it,
+watch it go green, then find the bug is producing wrong results and fix it through
+the tests. The bug is real and realistic, not a trick, and finding it is the point.
+
 Companion to the blog. All APIs verified against public docs on 2026-08-16.
 
 ## Layout
@@ -11,6 +15,7 @@ Companion to the blog. All APIs verified against public docs on 2026-08-16.
 ```
 setup/
   00_setup                    run this first: seeds data and creates the pipeline
+  01_tdd_walkthrough          the lesson: find the bug with tests, then fix it
   golden-prompt.md            optional: build the pipeline with Genie Code instead
 pipeline/
   transformations.py          the pipeline: raw -> clean -> customers_history (SCD2) -> curated
@@ -37,19 +42,17 @@ pipeline for you, pointed at this repo's code.
 
 1. Pull this repo into your workspace as a Git folder.
 2. Open `setup/00_setup` and run it top to bottom. In the `catalog` widget, enter
-   a catalog you can write to. The notebook works out the repo location, creates
-   the schema, seeds the source tables, and creates the `sdp-unit-testing`
-   pipeline pointed at `pipeline/transformations.py`.
-3. The last cell prints a link to the pipeline. Open it.
-4. Open `pipeline/tests/test_transformations.py` and click **Run file** (not "Run
-   pipeline"). The nine tests appear in the results panel, pass or fail per
-   assertion. Run a single test with the play button in its gutter.
+   a catalog you can write to. The notebook creates the schema, seeds the source
+   tables, and creates the `sdp-unit-testing` pipeline pointed at
+   `pipeline/transformations.py`.
+3. The last cell prints a link to the pipeline. Open it and click **Run pipeline**.
+   It succeeds.
+4. Open `setup/01_tdd_walkthrough` and follow it. You will see the gold table is
+   wrong, run the tests, watch one go red, fix the one-line bug, and re-run to
+   green.
 
 The pipeline sources only `pipeline/transformations.py`. The test file, the setup
-notebook, and these docs are not part of the pipeline, which is what you want.
-
-To run the pipeline itself against the seeded data, click **Run pipeline**, then
-explore `orders_curated` and `customers_history`.
+notebooks, and these docs are not part of the pipeline, which is what you want.
 
 ## What each test proves
 
