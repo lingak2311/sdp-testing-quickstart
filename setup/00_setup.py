@@ -90,9 +90,11 @@ print(f"Schema ready: {FQ}")
 # MAGIC ## Step 4: seed the bronze source, orders_source
 # MAGIC
 # MAGIC Fifteen orders with the edge cases the transform and expectations handle:
-# MAGIC valid rows, a zero quantity, a null price, and a null customer id. The unit
-# MAGIC tests do not use this table (they seed their own mock rows). This is here so
-# MAGIC you can run the pipeline for real and see the gold table.
+# MAGIC valid rows, a null price (line total stays null, not a silent zero), and a
+# MAGIC null customer id (dropped by the expectation). Every quantity is positive so
+# MAGIC the run is green. The unit tests seed their own quantity-0 row to prove the
+# MAGIC fail policy halts. This table is here so you can run the pipeline for real
+# MAGIC and see the gold table.
 
 # COMMAND ----------
 
@@ -100,7 +102,7 @@ spark.sql(f"""
 CREATE OR REPLACE TABLE {FQ}.orders_source AS
 SELECT * FROM VALUES
     (1001, 'C1', 2,  50.00),
-    (1002, 'C1', 0,  25.00),
+    (1002, 'C1', 2,  25.00),
     (1003, 'C2', 3,  NULL),
     (1004, NULL, 1,  10.00),
     (1005, 'C2', 1,  19.99),
@@ -111,7 +113,7 @@ SELECT * FROM VALUES
     (1010, 'C4', 3,  45.00),
     (1011, 'C2', 2,  15.00),
     (1012, 'C5', 1,  99.99),
-    (1013, 'C5', 0,  60.00),
+    (1013, 'C5', 1,  60.00),
     (1014, 'C3', 6,   5.00),
     (1015, 'C1', 2,  22.75)
 AS t(order_id, customer_id, quantity, unit_price)
