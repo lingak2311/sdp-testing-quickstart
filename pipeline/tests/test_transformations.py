@@ -25,7 +25,6 @@ def mock_orders_source(session):
         CREATE OR REPLACE TABLE lingesh_fe_sa_workspace_catalog.demo_sdp_unit_testing.orders_source AS
         SELECT * FROM VALUES
             (1001, 'C1', 2,  50.00),
-            (1002, 'C1', 0,  25.00),
             (1003, 'C2', 3,  NULL),
             (1004, NULL, 1,  10.00)
         AS t(order_id, customer_id, quantity, unit_price)
@@ -48,12 +47,37 @@ def mock_customers_cdf(session):
     )
 
 
+def mock_curated_inputs(session):
+    # orders_clean: two orders for C1, already through the silver transform.
+    session.sql(
+        """
+        CREATE OR REPLACE TABLE lingesh_fe_sa_workspace_catalog.demo_sdp_unit_testing.orders_clean AS
+        SELECT * FROM VALUES
+            (5001, 'C1', 2, 50.00, 100.00),
+            (5002, 'C1', 1, 30.00,  30.00)
+        AS t(order_id, customer_id, quantity, unit_price, line_total)
+        """
+    )
+    # customers_history: one closed SCD2 version and one current version for C1.
+    # The current row (Gold) has a null __END_AT. The gold join must pick only it.
+    session.sql(
+        """
+        CREATE OR REPLACE TABLE lingesh_fe_sa_workspace_catalog.demo_sdp_unit_testing.customers_history AS
+        SELECT * FROM VALUES
+            ('C1', 'Silver', 'London',     TIMESTAMP '2024-01-01', TIMESTAMP '2024-06-01'),
+            ('C1', 'Gold',   'Manchester', TIMESTAMP '2024-06-01', CAST(NULL AS TIMESTAMP))
+        AS t(customer_id, tier, city, `__START_AT`, `__END_AT`)
+        """
+    )
+
+
 # ---------------------------------------------------------------------------
 # Unit tests: transform logic in orders_clean. One class of assertion each.
 # ---------------------------------------------------------------------------
 def test_clean_happy_path_row_count(test_spark):
-    # Two of the four seeded rows are valid (1001 and 1003 survive the NOT NULL
-    # drops; 1002 has quantity 0 and 1004 has a null customer_id).
+    # Of the three seeded rows, 1001 and 1003 survive. 1004 is dropped for a
+    # null customer_id. There is no quantity-0 row here: expect_or_fail would
+    # halt the run, so that case lives only in the fail test below.
     mock_orders_source(test_spark)
     test_pipeline.run(test_spark, {"orders_clean"})
     result = test_spark.table("orders_clean")
@@ -147,3 +171,18 @@ def test_expectation_fails_update_on_non_positive_quantity(test_spark):
     )
     with pytest.raises(Exception):
         test_pipeline.run(test_spark, {"orders_clean"})
+
+
+# ---------------------------------------------------------------------------
+# Gold: orders_curated must attribute each order to the CURRENT customer tier,
+# the SCD2 row with a null __END_AT. This is the bug the blog centres on.
+# ---------------------------------------------------------------------------
+def test_curated_attributes_to_current_tier(test_spark):
+    mock_curated_inputs(test_spark)
+    test_pipeline.run(test_spark, {"orders_curated"})
+    rows = {r["tier"]: r for r in test_spark.table("orders_curated").collect()}
+    # Only the current tier appears. A missing __END_AT filter would fan the
+    # join across the closed Silver version too, so both tiers would show up.
+    assert set(rows) == {"Gold"}
+    assert rows["Gold"]["order_count"] == 2
+    assert rows["Gold"]["revenue"] == 130.00
