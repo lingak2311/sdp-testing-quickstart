@@ -21,6 +21,8 @@ dbutils.widgets.text("catalog", "", "Catalog (must be writable)")
 CATALOG = dbutils.widgets.get("catalog").strip()
 SCHEMA = "demo_sdp_unit_testing"
 
+# COMMAND ----------
+
 assert CATALOG, "Set the same catalog you used in 00_setup, then run this cell again."
 
 FQ = f"{CATALOG}.{SCHEMA}"
