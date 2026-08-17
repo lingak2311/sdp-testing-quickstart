@@ -76,9 +76,10 @@ dp.create_auto_cdc_flow(
 @dp.table
 def orders_curated():
     orders = spark.read.table("orders_clean")
+    # Reads the current rows of the SCD2 history so each order is attributed to
+    # the customer tier that is valid now.
     current_customers = (
         spark.read.table("customers_history")
-        .filter(col("__END_AT").isNull())
         .select("customer_id", "tier")
     )
     return (
