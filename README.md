@@ -65,6 +65,7 @@ notebooks, and these docs are not part of the pipeline, which is what you want.
 | output schema | unit | columns and shape are as declared |
 | SCD2 current state | integration | out-of-order events resolve to the latest by sequence |
 | SCD2 full history | integration | every version is kept |
+| curated current-tier attribution | gold | orders join only the current SCD2 row, not every version |
 | expectation drops row | expectations | the drop policy actually removes a bad row |
 | expectation fails update | expectations | the fail policy stops the run |
 
