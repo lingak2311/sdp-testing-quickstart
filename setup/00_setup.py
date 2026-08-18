@@ -250,7 +250,7 @@ print(f"  - default catalog {CATALOG}, schema {SCHEMA}")
 # MAGIC    source. The test file, this notebook, and the docs are not part of the
 # MAGIC    pipeline, which is correct.
 # MAGIC 2. Open `pipeline/tests/test_transformations.py`.
-# MAGIC 3. Click **Run file** (not "Run pipeline"). The nine tests appear in the
+# MAGIC 3. Click **Run Tests** (not "Run pipeline"). The ten tests appear in the
 # MAGIC    results panel with pass or fail per assertion. Run a single test with the
 # MAGIC    play button in its gutter.
 # MAGIC

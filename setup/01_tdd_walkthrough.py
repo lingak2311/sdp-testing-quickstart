@@ -79,7 +79,7 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # MAGIC ## Step 4: run the tests and watch one go red
 # MAGIC
 # MAGIC 1. In the pipeline editor file tree, open `pipeline/tests/test_transformations.py`.
-# MAGIC 2. Click **Run file** (not Run pipeline).
+# MAGIC 2. Click **Run Tests** (not Run pipeline).
 # MAGIC 3. Watch the results panel. Nine tests pass. One fails:
 # MAGIC    `test_curated_attributes_to_current_tier`.
 # MAGIC
@@ -109,7 +109,7 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # MAGIC )
 # MAGIC ```
 # MAGIC
-# MAGIC Run the test file again. All ten tests pass.
+# MAGIC Click **Run Tests** again. All ten tests pass.
 
 # COMMAND ----------
 
