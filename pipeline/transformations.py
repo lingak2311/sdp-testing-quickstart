@@ -14,13 +14,19 @@ from pyspark import pipelines as dp
 from pyspark.sql import functions as F
 from pyspark.sql.functions import col, expr
 
+# Set CATALOG to the catalog you passed to the setup notebook (this pipeline's
+# default catalog, where the source tables were seeded). Fill it in before you
+# run the pipeline. SCHEMA is fixed to the demo schema.
+CATALOG = "<your_catalog>"  # e.g. "main" or your workspace catalog
+SCHEMA = "demo_sdp_unit_testing"
+
 
 # Bronze. Raw orders as they land. In production this reads from a volume or a
 # connector; for the pipeline definition we read the seeded source table by name
 # so the unit-test framework can redirect it.
 @dp.table
 def orders_raw():
-    return spark.read.table("lingesh_fe_sa_workspace_catalog.demo_sdp_unit_testing.orders_source")
+    return spark.read.table(f"{CATALOG}.{SCHEMA}.orders_source")
 
 
 # Silver. The transform under test. Three things happen here:
@@ -55,7 +61,7 @@ def orders_clean():
 # resolve correctly. Verified signature: docs.databricks.com/aws/en/ldp/cdc
 @dp.view
 def customers_cdc():
-    return spark.readStream.table("lingesh_fe_sa_workspace_catalog.demo_sdp_unit_testing.customers_cdf")
+    return spark.readStream.table(f"{CATALOG}.{SCHEMA}.customers_cdf")
 
 
 dp.create_streaming_table("customers_history")

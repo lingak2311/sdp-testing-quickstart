@@ -25,8 +25,11 @@ from pyspark.testing import assertDataFrameEqual
 
 test_pipeline = TestPipeline.active()
 
-# Must match the pipeline's default catalog and schema.
-CATALOG = "lingesh_fe_sa_workspace_catalog"
+# Set CATALOG to the same catalog you passed to the setup notebook (this
+# pipeline's default catalog). The framework creates its temporary schema in that
+# catalog and only redirects fully qualified names, so this must match the
+# pipeline configuration. Fill it in before you run the tests.
+CATALOG = "<your_catalog>"  # e.g. "main" or your workspace catalog
 SCHEMA = "demo_sdp_unit_testing"
 FQ = f"{CATALOG}.{SCHEMA}"
 
