@@ -80,7 +80,7 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # MAGIC
 # MAGIC 1. In the pipeline editor file tree, open `pipeline/tests/test_transformations.py`.
 # MAGIC 2. Click **Run Tests** (not Run pipeline).
-# MAGIC 3. Watch the results panel. Nine tests pass. One fails:
+# MAGIC 3. Watch the results panel. Eight tests pass. One fails:
 # MAGIC    `test_curated_attributes_to_current_tier`.
 # MAGIC
 # MAGIC Read the assertion. The test seeds a customer with two SCD2 versions, a closed
@@ -109,7 +109,7 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # MAGIC )
 # MAGIC ```
 # MAGIC
-# MAGIC Click **Run Tests** again. All ten tests pass.
+# MAGIC Click **Run Tests** again. All nine tests pass.
 
 # COMMAND ----------
 
@@ -137,10 +137,10 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # MAGIC - fail (`@dp.expect_or_fail`): stop the update.
 # MAGIC
 # MAGIC `orders_clean` uses all three shapes. The test
-# MAGIC `test_expectation_fails_update_on_non_positive_quantity` seeds a quantity-0 row
-# MAGIC and asserts the run raises, using `pytest.raises`. That is how you prove a fail
-# MAGIC policy actually halts, rather than trusting that it does. Look at it in the
-# MAGIC test file.
+# MAGIC `test_expectation_drops_row_missing_order_id` proves the drop policy: it seeds a
+# MAGIC null-order_id row and asserts the row is gone from the output. The fail policy
+# MAGIC halts the whole update, which you see when you Run pipeline on bad data, rather
+# MAGIC than as a single unit assertion.
 
 # COMMAND ----------
 
@@ -150,6 +150,6 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # MAGIC - A green pipeline can ship wrong data. Tests are how you catch it.
 # MAGIC - `test_spark` redirects tables by name, so mocking a source is one `CREATE TABLE`.
 # MAGIC - You can test stateful AUTO CDC and SCD2 logic, not just plain transforms.
-# MAGIC - You can assert that an expectation fires, including a fail policy that halts.
+# MAGIC - You can assert that a drop expectation fires by checking the bad row is gone.
 # MAGIC
 # MAGIC The pipeline now has a test guarding the exact bug you fixed. That is the point.

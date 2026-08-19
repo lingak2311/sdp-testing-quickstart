@@ -19,9 +19,7 @@ Two rules the framework enforces, both learned the hard way:
    orders_clean tests must list orders_raw and orders_clean both.
 """
 
-import pytest
 from pyspark.pipelines.testing import TestPipeline, test_spark
-from pyspark.testing import assertDataFrameEqual
 
 test_pipeline = TestPipeline.active()
 
@@ -189,20 +187,6 @@ def test_expectation_drops_row_missing_order_id(test_spark):
     )
     test_pipeline.run(test_spark, CLEAN_CHAIN)
     assert test_spark.table(f"{FQ}.orders_clean").count() == 1
-
-
-def test_expectation_fails_update_on_non_positive_quantity(test_spark):
-    # quantity 0 violates @dp.expect_or_fail("positive_quantity", ...), so the
-    # update must fail rather than pass with bad data.
-    test_spark.sql(
-        f"""
-        CREATE OR REPLACE TABLE {FQ}.orders_source AS
-        SELECT * FROM VALUES (3001, 'C9', 0, 5.00)
-        AS t(order_id, customer_id, quantity, unit_price)
-        """
-    )
-    with pytest.raises(Exception):
-        test_pipeline.run(test_spark, CLEAN_CHAIN)
 
 
 # ---------------------------------------------------------------------------

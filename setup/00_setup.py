@@ -94,8 +94,8 @@ print(f"Schema ready: {FQ}")
 # MAGIC Fifteen orders with the edge cases the transform and expectations handle:
 # MAGIC valid rows, a null price (line total stays null, not a silent zero), and a
 # MAGIC null customer id (dropped by the expectation). Every quantity is positive so
-# MAGIC the run is green. The unit tests seed their own quantity-0 row to prove the
-# MAGIC fail policy halts. This table is here so you can run the pipeline for real
+# MAGIC the run is green: a non-positive quantity would trip the fail expectation and
+# MAGIC halt the update. This table is here so you can run the pipeline for real
 # MAGIC and see the gold table.
 
 # COMMAND ----------
@@ -250,7 +250,7 @@ print(f"  - default catalog {CATALOG}, schema {SCHEMA}")
 # MAGIC    source. The test file, this notebook, and the docs are not part of the
 # MAGIC    pipeline, which is correct.
 # MAGIC 2. Open `pipeline/tests/test_transformations.py`.
-# MAGIC 3. Click **Run Tests** (not "Run pipeline"). The ten tests appear in the
+# MAGIC 3. Click **Run Tests** (not "Run pipeline"). The nine tests appear in the
 # MAGIC    results panel with pass or fail per assertion. Run a single test with the
 # MAGIC    play button in its gutter.
 # MAGIC

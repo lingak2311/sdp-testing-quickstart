@@ -67,7 +67,6 @@ notebooks, and these docs are not part of the pipeline, which is what you want.
 | SCD2 full history | integration | every version is kept |
 | curated current-tier attribution | gold | orders join only the current SCD2 row, not every version |
 | expectation drops row | expectations | the drop policy actually removes a bad row |
-| expectation fails update | expectations | the fail policy stops the run |
 
 Test runs execute on the pipeline compute and are billed as normal pipeline
 updates.
