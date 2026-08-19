@@ -24,7 +24,7 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1: pick your catalog
+# MAGIC ## Step 1: Pick your catalog
 # MAGIC
 # MAGIC Set the catalog in the widget that appears at the top of the notebook after
 # MAGIC you run this cell. It must be a catalog you can create schemas and tables in.
@@ -50,7 +50,7 @@ print(f"Target:  {FQ}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2: work out where this repo lives
+# MAGIC ## Step 2: Work out where this repo lives
 # MAGIC
 # MAGIC This notebook sits at `<repo>/setup/00_setup`. We read the notebook's own
 # MAGIC workspace path at runtime and step up two folders to get the repo root, so
@@ -77,7 +77,7 @@ print(f"Pipeline source: {pipeline_source}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3: create the schema
+# MAGIC ## Step 3: Create the schema
 # MAGIC
 # MAGIC Idempotent. Safe to run more than once.
 
@@ -89,7 +89,7 @@ print(f"Schema ready: {FQ}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4: seed the bronze source, orders_source
+# MAGIC ## Step 4: Seed the bronze source, orders_source
 # MAGIC
 # MAGIC Fifteen orders with the edge cases the transform and expectations handle:
 # MAGIC valid rows, a null price (line total stays null, not a silent zero), and a
@@ -126,7 +126,7 @@ display(spark.table(f"{FQ}.orders_source"))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5: seed the CDC source, customers_cdf
+# MAGIC ## Step 5: Seed the CDC source, customers_cdf
 # MAGIC
 # MAGIC Change events for AUTO CDC. Look at customer C1: three events arriving out of
 # MAGIC order (sequence 1, then 3, then a late 2). The pipeline must resolve the
@@ -155,7 +155,7 @@ display(spark.table(f"{FQ}.customers_cdf"))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6: create or update the SDP pipeline
+# MAGIC ## Step 6: Create or update the SDP pipeline
 # MAGIC
 # MAGIC We build the pipeline spec in code and create it through the SDK. Key settings,
 # MAGIC each of which matters for unit testing:
@@ -226,7 +226,7 @@ else:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 7: open the pipeline and confirm
+# MAGIC ## Step 7: Open the pipeline and confirm
 
 # COMMAND ----------
 
@@ -242,7 +242,7 @@ print(f"  - default catalog {CATALOG}, schema {SCHEMA}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 8: run the tests, then run the pipeline
+# MAGIC ## Step 8: Run the tests, then run the pipeline
 # MAGIC
 # MAGIC Do these in order. Steps 3 and 4 are both required before you open the
 # MAGIC walkthrough notebook.

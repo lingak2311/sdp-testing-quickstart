@@ -36,7 +36,7 @@ print(f"Target: {FQ}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 1: look at the gold table
+# MAGIC ## Step 1: Look at the gold table
 # MAGIC
 # MAGIC `orders_curated` aggregates revenue and order count per customer tier. Run the
 # MAGIC cell and read the numbers. If it errors with "table or view not found", you
@@ -50,7 +50,7 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 2: the numbers are wrong
+# MAGIC ## Step 2: The numbers are wrong
 # MAGIC
 # MAGIC You seeded 15 orders, and one has a null customer id that the pipeline drops,
 # MAGIC so 14 orders should be attributed. Add up `order_count` across the tiers. It
@@ -64,7 +64,7 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3: how SDP unit testing works
+# MAGIC ## Step 3: How SDP unit testing works
 # MAGIC
 # MAGIC The framework runs a subset of your pipeline against data you control, then
 # MAGIC lets you assert on the output. Three pieces:
@@ -83,7 +83,7 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4: run the tests and watch one go red
+# MAGIC ## Step 4: Run the tests and watch one go red
 # MAGIC
 # MAGIC 1. In the pipeline editor file tree, open `pipeline/tests/test_transformations.py`.
 # MAGIC 2. Click **Run Tests** (not Run pipeline).
@@ -98,7 +98,7 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5: fix the bug
+# MAGIC ## Step 5: Fix the bug
 # MAGIC
 # MAGIC Open `pipeline/transformations.py` and find `orders_curated`. The comment says
 # MAGIC it reads the current rows of the SCD2 history, but the code does not filter for
@@ -121,7 +121,7 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6: re-run the pipeline and confirm the fix
+# MAGIC ## Step 6: Re-run the pipeline and confirm the fix
 # MAGIC
 # MAGIC Click **Run pipeline**. When it finishes, run the cell below. The order counts
 # MAGIC now sum to 14, revenue attributes to the current tier, and the numbers are
@@ -134,7 +134,7 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 7: the loud failure, on purpose
+# MAGIC ## Step 7: The loud failure, on purpose
 # MAGIC
 # MAGIC The silent bug was one kind of problem. Expectations are the other. SDP has
 # MAGIC three policies:
