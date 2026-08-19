@@ -6,6 +6,11 @@
 # MAGIC %md
 # MAGIC # SDP unit testing: find the bug with tests
 # MAGIC
+# MAGIC Prerequisite: in `00_setup` you must have done BOTH Run Tests and Run pipeline
+# MAGIC (Step 8). Run pipeline materializes `orders_curated`, which this notebook reads.
+# MAGIC If you skipped it, Step 1 below fails with "table or view not found": go back to
+# MAGIC `00_setup`, click Run pipeline, then return here.
+# MAGIC
 # MAGIC You ran `00_setup` and the pipeline went green. Every table built, no errors.
 # MAGIC A green pipeline feels like a correct pipeline. It is not.
 # MAGIC
@@ -34,7 +39,9 @@ print(f"Target: {FQ}")
 # MAGIC ## Step 1: look at the gold table
 # MAGIC
 # MAGIC `orders_curated` aggregates revenue and order count per customer tier. Run the
-# MAGIC cell and read the numbers.
+# MAGIC cell and read the numbers. If it errors with "table or view not found", you
+# MAGIC have not run the pipeline yet: go back to `00_setup` Step 8, click Run
+# MAGIC pipeline, then run this cell again.
 
 # COMMAND ----------
 

@@ -242,18 +242,22 @@ print(f"  - default catalog {CATALOG}, schema {SCHEMA}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 8: run the tests
+# MAGIC ## Step 8: run the tests, then run the pipeline
 # MAGIC
-# MAGIC In the pipeline you just opened:
+# MAGIC Do these in order. Steps 3 and 4 are both required before you open the
+# MAGIC walkthrough notebook.
 # MAGIC
 # MAGIC 1. In the editor file tree, confirm `pipeline/transformations.py` is the
 # MAGIC    source. The test file, this notebook, and the docs are not part of the
 # MAGIC    pipeline, which is correct.
 # MAGIC 2. Open `pipeline/tests/test_transformations.py`.
-# MAGIC 3. Click **Run Tests** (not "Run pipeline"). The nine tests appear in the
-# MAGIC    results panel with pass or fail per assertion. Run a single test with the
-# MAGIC    play button in its gutter.
-# MAGIC
-# MAGIC To run the pipeline itself against the seeded data, click **Run pipeline**,
-# MAGIC then explore `orders_curated` (revenue by tier) and `customers_history`
-# MAGIC (the SCD Type 2 history).
+# MAGIC 3. Click **Run Tests** (not "Run pipeline"). Nine tests appear in the results
+# MAGIC    panel. Eight pass and one fails: `test_curated_attributes_to_current_tier`.
+# MAGIC    That failure is expected. It is the deliberate bug you find and fix in the
+# MAGIC    walkthrough. Run a single test with the play button in its gutter.
+# MAGIC 4. Now click **Run pipeline** (required). This materializes the tables,
+# MAGIC    including `orders_curated`, so the walkthrough can read them. Skip this and
+# MAGIC    the next notebook fails on "table or view not found". When it finishes you
+# MAGIC    can explore `orders_curated` (revenue by tier) and `customers_history` (the
+# MAGIC    SCD Type 2 history).
+# MAGIC 5. Open `setup/01_tdd_walkthrough` and follow it. That is where the lesson is.
