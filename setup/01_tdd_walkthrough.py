@@ -52,10 +52,13 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # MAGIC %md
 # MAGIC ## Step 2: The numbers are wrong
 # MAGIC
-# MAGIC You seeded 15 orders, and one has a null customer id that the pipeline drops,
-# MAGIC so 14 orders should be attributed. Add up `order_count` across the tiers. It
-# MAGIC is higher than 14. Some orders are counted more than once, and revenue is
-# MAGIC smeared across tiers a customer no longer belongs to.
+# MAGIC You seeded 15 orders. One has a null customer id that the pipeline drops, so
+# MAGIC exactly 14 orders should be attributed. Now add up `order_count` across the
+# MAGIC tiers: 3 + 7 + 2 + 13 = 25. The table reports 25 attributed orders against 14
+# MAGIC real ones. Orders are counted more than once, and revenue is smeared across
+# MAGIC tiers a customer no longer belongs to. The Silver row is the tell: it shows 13
+# MAGIC orders, yet no customer is currently Silver. Those orders matched customers
+# MAGIC through their old, closed Silver versions.
 # MAGIC
 # MAGIC Nothing failed. No error, no red. In production this ships, and a dashboard
 # MAGIC shows inflated revenue for weeks before anyone notices. This is the failure
@@ -123,9 +126,12 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # MAGIC %md
 # MAGIC ## Step 6: Re-run the pipeline and confirm the fix
 # MAGIC
-# MAGIC Click **Run pipeline**. When it finishes, run the cell below. The order counts
-# MAGIC now sum to 14, revenue attributes to the current tier, and the numbers are
-# MAGIC correct. The test that caught the bug now guards against it coming back.
+# MAGIC Click **Run pipeline**. When it finishes, run the cell below. Add up
+# MAGIC `order_count` again: 2 + 3 + 7 + 2 = 14. That matches the 14 real orders
+# MAGIC exactly, and revenue attributes to each customer's current tier. The null
+# MAGIC tier holds two orders (159.99) from a customer deleted in the CDC stream, so
+# MAGIC it has no current tier: those orders are still counted, just not misattributed.
+# MAGIC The test that caught the bug now guards against it coming back.
 
 # COMMAND ----------
 
