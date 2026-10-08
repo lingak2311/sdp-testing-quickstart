@@ -77,7 +77,9 @@ display(spark.table(f"{FQ}.orders_curated").orderBy("tier"))
 # MAGIC   with a plain `CREATE TABLE` and the pipeline reads the mock, not production.
 # MAGIC - `TestPipeline.active()`: a handle to the pipeline being edited.
 # MAGIC - `test_pipeline.run(test_spark, {"table_name"})`: runs a selective refresh of
-# MAGIC   just the tables you name, synchronously, so you can read the result.
+# MAGIC   just the tables you name, synchronously, so you can read the result. It
+# MAGIC   returns a status and does not raise when the update fails, so the tests
+# MAGIC   check `status.is_success` first, through the `run_chain` helper.
 # MAGIC
 # MAGIC Tests run only inside this Lakeflow editor, on PREVIEW channel, triggered mode,
 # MAGIC with Owner permission. You cannot run them from a notebook. That is why this

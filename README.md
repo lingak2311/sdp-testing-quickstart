@@ -8,7 +8,7 @@ This is a fail-first lesson. The pipeline ships with a deliberate bug. You run i
 watch it go green, then find the bug is producing wrong results and fix it through
 the tests. The bug is real and realistic, not a trick, and finding it is the point.
 
-Companion to the blog. All APIs verified against public docs on 2026-08-16.
+Companion to the blog. All APIs verified against public docs on 2026-10-07.
 
 ## Layout
 

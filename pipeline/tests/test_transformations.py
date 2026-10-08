@@ -44,6 +44,13 @@ CURATED_CHAIN = {
 CDC_CHAIN = {f"{FQ}.customers_history"}
 
 
+# run() returns a status and does not raise when the update fails. Assert on it
+# first, or a failed run shows up later as "table not found" on the read.
+def run_chain(session, chain):
+    status = test_pipeline.run(session, chain)
+    assert status.is_success, f"{status.error_class}: {status.error_message}"
+
+
 # ---------------------------------------------------------------------------
 # Mock builders. Each seeds a SOURCE table by its fully qualified name, which
 # the test_spark fixture redirects into the isolated per-run schema.
@@ -107,16 +114,16 @@ def mock_curated_sources(session):
 def test_clean_happy_path_row_count(test_spark):
     # Of the three seeded rows, 1001 and 1003 survive. 1004 is dropped for a
     # null customer_id. There is no quantity-0 row here: expect_or_fail would
-    # halt the run, so that case lives only in the fail test below.
+    # halt the run.
     mock_orders_source(test_spark)
-    test_pipeline.run(test_spark, CLEAN_CHAIN)
+    run_chain(test_spark, CLEAN_CHAIN)
     result = test_spark.table(f"{FQ}.orders_clean")
     assert result.count() == 2
 
 
 def test_clean_computes_line_total(test_spark):
     mock_orders_source(test_spark)
-    test_pipeline.run(test_spark, CLEAN_CHAIN)
+    run_chain(test_spark, CLEAN_CHAIN)
     row = test_spark.table(f"{FQ}.orders_clean").filter("order_id = 1001").first()
     assert row["line_total"] == 100.0  # 2 * 50.00
 
@@ -124,7 +131,7 @@ def test_clean_computes_line_total(test_spark):
 def test_clean_null_price_yields_null_total(test_spark):
     # order 1003 has a null unit_price, so line_total must be null, not 0.
     mock_orders_source(test_spark)
-    test_pipeline.run(test_spark, CLEAN_CHAIN)
+    run_chain(test_spark, CLEAN_CHAIN)
     row = test_spark.table(f"{FQ}.orders_clean").filter("order_id = 1003").first()
     assert row["line_total"] is None
 
@@ -132,14 +139,14 @@ def test_clean_null_price_yields_null_total(test_spark):
 def test_clean_drops_rows_missing_keys(test_spark):
     # order 1004 has a null customer_id and must not appear.
     mock_orders_source(test_spark)
-    test_pipeline.run(test_spark, CLEAN_CHAIN)
+    run_chain(test_spark, CLEAN_CHAIN)
     ids = [r["order_id"] for r in test_spark.table(f"{FQ}.orders_clean").collect()]
     assert 1004 not in ids
 
 
 def test_clean_output_schema(test_spark):
     mock_orders_source(test_spark)
-    test_pipeline.run(test_spark, CLEAN_CHAIN)
+    run_chain(test_spark, CLEAN_CHAIN)
     cols = set(test_spark.table(f"{FQ}.orders_clean").columns)
     assert cols == {"order_id", "customer_id", "quantity", "unit_price", "line_total"}
 
@@ -151,7 +158,7 @@ def test_clean_output_schema(test_spark):
 def test_cdc_scd2_current_state_is_latest_by_sequence(test_spark):
     # Despite the late-arriving seq 2 event, the current row must reflect seq 3.
     mock_customers_cdf(test_spark)
-    test_pipeline.run(test_spark, CDC_CHAIN)
+    run_chain(test_spark, CDC_CHAIN)
     current = (
         test_spark.table(f"{FQ}.customers_history")
         .filter("__END_AT IS NULL AND customer_id = 'C1'")
@@ -165,7 +172,7 @@ def test_cdc_scd2_keeps_full_history(test_spark):
     # SCD2 keeps one row per version. Three change events for C1 means three
     # history rows.
     mock_customers_cdf(test_spark)
-    test_pipeline.run(test_spark, CDC_CHAIN)
+    run_chain(test_spark, CDC_CHAIN)
     versions = test_spark.table(f"{FQ}.customers_history").filter("customer_id = 'C1'").count()
     assert versions == 3
 
@@ -185,7 +192,7 @@ def test_expectation_drops_row_missing_order_id(test_spark):
         AS t(order_id, customer_id, quantity, unit_price)
         """
     )
-    test_pipeline.run(test_spark, CLEAN_CHAIN)
+    run_chain(test_spark, CLEAN_CHAIN)
     assert test_spark.table(f"{FQ}.orders_clean").count() == 1
 
 
@@ -196,7 +203,7 @@ def test_expectation_drops_row_missing_order_id(test_spark):
 # ---------------------------------------------------------------------------
 def test_curated_attributes_to_current_tier(test_spark):
     mock_curated_sources(test_spark)
-    test_pipeline.run(test_spark, CURATED_CHAIN)
+    run_chain(test_spark, CURATED_CHAIN)
     rows = {r["tier"]: r for r in test_spark.table(f"{FQ}.orders_curated").collect()}
     # Only the current tier appears. A missing __END_AT filter fans the join
     # across the closed Silver versions too, so more than one tier would show up.
