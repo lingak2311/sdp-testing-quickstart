@@ -2,6 +2,11 @@
 FIELD-NOTES.md
 blog-assets/
 
+# Local tooling and OS files
+.isaac/
+.claude/
+.DS_Store
+
 # Python
 __pycache__/
 *.pyc
